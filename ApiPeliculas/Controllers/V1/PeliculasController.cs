@@ -203,12 +203,7 @@ namespace ApiPeliculas.Controllers.V1
 
             var pelicula = _mapper.Map<Pelicula>(actualizarPeliculaDto);
 
-            //if (!_pelRepo.ActualizarPelicula(pelicula))
-            //{
-            //    ModelState.AddModelError("", $"Algo salio mal actualizando el registro{pelicula.Nombre}");
-            //    return StatusCode(500, ModelState);
-            //}
-
+ 
             //Subida de imagen
             if (actualizarPeliculaDto.Imagen != null)
             {
