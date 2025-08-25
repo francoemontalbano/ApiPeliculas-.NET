@@ -4,3 +4,16 @@ GET {{ApiPeliculas_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+# Registro de usuario con email
+POST {{ApiPeliculas_HostAddress}}/api/v1/usuarios/registro
+Content-Type: application/json
+
+{
+  "nombreUsuario": "juan123",
+  "nombre": "Juan Pérez",
+  "password": "TuPassword#2024",
+  "email": "juan@example.com"
+}
+
+###

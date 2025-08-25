@@ -31,7 +31,7 @@ namespace ApiPeliculas.Controllers
             _usRepo = usRepo;
             _mapper = mapper;
             _configuration = configuration;
-            _respuestaApi = new();
+            this._respuestaApi = new();
         }
 
         [Authorize(Roles = "Admin")]
@@ -88,102 +88,7 @@ namespace ApiPeliculas.Controllers
             return Ok(itemUsuarioDto);
         }
 
-        //// Endpoint de prueba para verificar autenticación
-        //[Authorize]
-        //[HttpGet("test-auth")]
-        //public IActionResult TestAuth()
-        //{
-        //    var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-        //    var roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
-            
-        //    return Ok(new
-        //    {
-        //        Message = "Autenticación exitosa",
-        //        UserName = User.Identity.Name,
-        //        Roles = roles,
-        //        Claims = claims
-        //    });
-        //}
-
-        //// Endpoint de prueba específico para Admin
-        //[Authorize(Roles = "Admin")]
-        //[HttpGet("test-admin")]
-        //public IActionResult TestAdmin()
-        //{
-        //    return Ok(new
-        //    {
-        //        Message = "Acceso de administrador exitoso",
-        //        UserName = User.Identity.Name,
-        //        Roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList()
-        //    });
-        //}
-
-        //// Endpoint de debugging detallado
-        //[Authorize]
-        //[HttpGet("debug-auth")]
-        //public IActionResult DebugAuth()
-        //{
-        //    var debugInfo = new
-        //    {
-        //        User.Identity.IsAuthenticated,
-        //        UserName = User.Identity.Name,
-        //        User.Identity.AuthenticationType,
-        //        AllClaims = User.Claims.Select(c => new { c.Type, c.Value }).ToList(),
-        //        RoleClaims = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList(),
-        //        NameClaims = User.Claims.Where(c => c.Type == ClaimTypes.Name).Select(c => c.Value).ToList(),
-        //        NameIdentifierClaims = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).Select(c => c.Value).ToList(),
-        //        IsInRoleAdmin = User.IsInRole("Admin"),
-        //        IsInRoleUser = User.IsInRole("User"),
-        //        HasAnyRole = User.Claims.Any(c => c.Type == ClaimTypes.Role)
-        //    };
-
-        //    return Ok(debugInfo);
-        //}
-
-        // Endpoint para verificar el token sin autorización
-        //[AllowAnonymous]
-        //[HttpPost("verify-token")]
-        //public IActionResult VerifyToken([FromBody] TokenVerificationDto tokenDto)
-        //{
-        //    try
-        //    {
-        //        var tokenHandler = new JwtSecurityTokenHandler();
-        //        var key = Encoding.ASCII.GetBytes(_configuration.GetValue<string>("ApiSettings:Secreta"));
-                
-        //        tokenHandler.ValidateToken(tokenDto.Token, new TokenValidationParameters
-        //        {
-        //            ValidateIssuerSigningKey = true,
-        //            IssuerSigningKey = new SymmetricSecurityKey(key),
-        //            ValidateIssuer = false,
-        //            ValidateAudience = false,
-        //            ValidateLifetime = true,
-        //            ClockSkew = TimeSpan.Zero,
-        //            RoleClaimType = ClaimTypes.Role
-        //        }, out SecurityToken validatedToken);
-
-        //        var jwtToken = (JwtSecurityToken)validatedToken;
-        //        var claims = jwtToken.Claims.Select(c => new { c.Type, c.Value }).ToList();
-        //        var roles = jwtToken.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
-
-        //        return Ok(new
-        //        {
-        //            IsValid = true,
-        //            Claims = claims,
-        //            Roles = roles,
-        //            ExpiresAt = jwtToken.ValidTo,
-        //            IssuedAt = jwtToken.ValidFrom
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new
-        //        {
-        //            IsValid = false,
-        //            Error = ex.Message
-        //        });
-        //    }
-        //}
-
+        
         [AllowAnonymous]
         [HttpPost("registro")]
         [ProducesResponseType(StatusCodes.Status201Created)]

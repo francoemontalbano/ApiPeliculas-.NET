@@ -31,14 +31,15 @@ namespace ApiPeliculas.Repositorio
             _mapper = mapper;
         }
 
-        public ICollection<AppUsuario> GetUsuarios()
-        {
-            return _bd.AppUsuario.OrderBy(c => c.UserName).ToList();
-        }
-
+       
         public AppUsuario GetUsuarios(string usuarioId)
         {
             return _bd.AppUsuario.FirstOrDefault(c => c.Id == usuarioId);
+        }
+
+        public ICollection<AppUsuario> GetUsuarios()
+        {
+            return _bd.AppUsuario.OrderBy(c => c.UserName).ToList();
         }
 
         public bool IsUniqueUser(string usuario)
@@ -90,20 +91,6 @@ namespace ApiPeliculas.Repositorio
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
-
-            ////  IMPORTANTE: Verificar que el rol existe antes de agregarlo
-            //if (!string.IsNullOrEmpty(usuario.Role))
-            //{
-            //    claims.Add(new Claim(ClaimTypes.Role, usuario.roles.Role));
-            //}
-
-            //var tokenDescriptor = new SecurityTokenDescriptor()
-            //{
-            //    Subject = new ClaimsIdentity(claims), // ✅ Usar la lista de claims
-            //    Expires = DateTime.UtcNow.AddDays(7),
-            //    SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            //};
-
         var token = manejadorToken.CreateToken(tokenDescriptor);
 
             UsuarioLoginRespuestaDto usuarioLoginRespuestaDto = new UsuarioLoginRespuestaDto()
@@ -122,8 +109,8 @@ namespace ApiPeliculas.Repositorio
             AppUsuario usuario = new AppUsuario()
             {
                 UserName = usuarioRegistroDto.NombreUsuario,
-                Email = usuarioRegistroDto.NombreUsuario,
-                NormalizedEmail = usuarioRegistroDto.NombreUsuario.ToUpper(),
+                Email = usuarioRegistroDto.Email,
+                NormalizedEmail = usuarioRegistroDto.Email?.ToUpper(),
                 Nombre = usuarioRegistroDto.Nombre,
             };
 
@@ -141,23 +128,7 @@ namespace ApiPeliculas.Repositorio
                 return _mapper.Map<UsuarioDatosDto>(usuarioRetornado);
             }
 
-            //_bd.Usuario.Add(usuario);
-            //await _bd.SaveChangesAsync();
-            //usuario.Password = passwordEncriptada;
             return new UsuarioDatosDto();
         }
-
-        //public static string obtenermd5(string valor) { 
-        
-        //MD5CryptoServiceProvider x = new MD5CryptoServiceProvider();
-        //byte[] data = System.Text.Encoding.UTF8.GetBytes(valor);
-        //data = x.ComputeHash(data);
-        //string resp = "";
-        //for(int i = 0; i < data.Length; i ++)
-        //    resp += data[i].ToString("x2").ToLower();
-        //return resp;
-        
-  
-        //}
     }
 }

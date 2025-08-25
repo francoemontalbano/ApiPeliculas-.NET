@@ -18,11 +18,30 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(opciones => 
-                    opciones.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSql")));
+{
+    var connectionString = Environment.GetEnvironmentVariable("CONNECTIONSTRINGS__CONEXIONSQL")
+        ?? Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+        ?? builder.Configuration.GetConnectionString("ConexionSql");
+    opciones.UseSqlServer(connectionString);
+});
 
 
 //Soporte para autenticación con .NET Identity
-builder.Services.AddIdentity<AppUsuario, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddIdentity<AppUsuario, IdentityRole>(options =>
+{
+    // Configuración para recuperación de contraseña
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+    
+    // Configuración para tokens de recuperación
+    options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;
+    options.Tokens.ChangeEmailTokenProvider = TokenOptions.DefaultEmailProvider;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
 
 //Soporte para cache
@@ -50,7 +69,9 @@ builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
 builder.Services.AddScoped<IPeliculaRepositorio, PeliculaRepositorio>();
 builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 
-var key = builder.Configuration.GetValue<string>("ApiSettings:Secreta");
+var jwtSecret = Environment.GetEnvironmentVariable("APISETTINGS__SECRETA")
+    ?? Environment.GetEnvironmentVariable("APIPELIS__JWT_SECRETA")
+    ?? builder.Configuration["ApiSettings:Secreta"];
 
 //Soporte para versionamiento
 builder.Services.AddApiVersioning();
@@ -69,7 +90,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["ApiSettings:Secreta"])),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
         ValidateIssuer = false,
         ValidateAudience = false,
         RoleClaimType = ClaimTypes.Role // Esto es importante
@@ -161,15 +182,6 @@ builder.Services.AddCors(p => p.AddPolicy("PoliticaCors", build =>
          .AllowAnyHeader();
 }));
 
-// ALTERNATIVA: Si necesitas AllowCredentials (para cookies, headers de autorización)
-// builder.Services.AddCors(p => p.AddPolicy("PoliticaCors", build =>
-// {
-//     build.SetIsOriginAllowed(origin => true)
-//          .AllowAnyMethod()
-//          .AllowAnyHeader()
-//          .AllowCredentials();
-// }));
-
 
 var app = builder.Build();
 app.UseSwagger();
@@ -203,5 +215,20 @@ app.UseAuthentication(); // Habilita la autenticación
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var conn = db.Database.GetDbConnection();
+    Console.WriteLine($"Conectando a: {conn.DataSource} / {conn.Database}");
+    db.Database.Migrate();
+}
 
 app.Run();
