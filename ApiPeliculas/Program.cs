@@ -16,7 +16,7 @@ using XAct;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Agrega servicios a los contenedores
 builder.Services.AddDbContext<ApplicationDbContext>(opciones => 
 {
     var connectionString = Environment.GetEnvironmentVariable("CONNECTIONSTRINGS__CONEXIONSQL")
@@ -29,16 +29,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
 //Soporte para autenticación con .NET Identity
 builder.Services.AddIdentity<AppUsuario, IdentityRole>(options =>
 {
-    // Configuración para recuperación de contraseña
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 8;
-    
-    // Configuración para tokens de recuperación
-    options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;
-    options.Tokens.ChangeEmailTokenProvider = TokenOptions.DefaultEmailProvider;
+    options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -50,9 +46,6 @@ var apiVersioningBuilder = builder.Services.AddApiVersioning(opcion =>
     opcion.AssumeDefaultVersionWhenUnspecified = true; // Asume la versión por defecto si no se especifica
     opcion.DefaultApiVersion = new ApiVersion(1, 0); // Establece la versión por defecto
     opcion.ReportApiVersions = true; // Informa las versiones de la API en las respuestas
-    //opcion.ApiVersionReader = ApiVersionReader.Combine(
-    //    new QueryStringApiVersionReader("api-version")
-    //); 
 });
 
 apiVersioningBuilder.AddApiExplorer(
@@ -72,6 +65,11 @@ builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 var jwtSecret = Environment.GetEnvironmentVariable("APISETTINGS__SECRETA")
     ?? Environment.GetEnvironmentVariable("APIPELIS__JWT_SECRETA")
     ?? builder.Configuration["ApiSettings:Secreta"];
+
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("ApiSettings:Secreta no está configurada. Defínela en variables de entorno o user-secrets.");
+}
 
 //Soporte para versionamiento
 builder.Services.AddApiVersioning();
@@ -216,19 +214,21 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Aplicar migraciones y sembrar roles por única vez al arranque
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
-}
 
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    var conn = db.Database.GetDbConnection();
-    Console.WriteLine($"Conectando a: {conn.DataSource} / {conn.Database}");
-    db.Database.Migrate();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    if (!await roleManager.RoleExistsAsync("Admin"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("Admin"));
+    }
+    if (!await roleManager.RoleExistsAsync("Registrado"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("Registrado"));
+    }
 }
 
 app.Run();

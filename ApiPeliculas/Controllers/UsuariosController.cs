@@ -105,19 +105,29 @@ namespace ApiPeliculas.Controllers
                 return BadRequest(_respuestaApi);
             }
 
-            var usuario = await _usRepo.Registro(usuarioRegistroDto); // Asume que es async
+            try
+            {
+                var usuario = await _usRepo.Registro(usuarioRegistroDto);
+                if (usuario == null)
+                {
+                    _respuestaApi.StatusCode = HttpStatusCode.BadRequest;
+                    _respuestaApi.isSuccess = false;
+                    _respuestaApi.ErrorMessage.Add("Error al registrar el usuario");
+                    return StatusCode(500, _respuestaApi);
+                }
 
-            if (usuario == null)
+                _respuestaApi.StatusCode = HttpStatusCode.OK;
+                _respuestaApi.isSuccess = true;
+                _respuestaApi.Result = "Usuario registrado con éxito";
+                return Ok(_respuestaApi);
+            }
+            catch (InvalidOperationException ex)
             {
                 _respuestaApi.StatusCode = HttpStatusCode.BadRequest;
                 _respuestaApi.isSuccess = false;
-                _respuestaApi.ErrorMessage.Add("Error al registrar el usuario");
-                return StatusCode(500, _respuestaApi);
+                _respuestaApi.ErrorMessage.Add(ex.Message);
+                return BadRequest(_respuestaApi);
             }
-
-            _respuestaApi.StatusCode = HttpStatusCode.OK;
-            _respuestaApi.isSuccess = true;
-            return Ok(_respuestaApi);
         }
 
 

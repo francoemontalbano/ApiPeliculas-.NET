@@ -6,10 +6,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace ApiPeliculas.Repositorio
@@ -54,31 +51,33 @@ namespace ApiPeliculas.Repositorio
 
         public async Task<UsuarioLoginRespuestaDto> Login(UsuarioLoginDto usuarioLoginDto)
         {
-            //var passwordEncriptado = obtenermd5(usuarioLoginDto.Password);
             var usuario = _bd.AppUsuario.FirstOrDefault(
                 u => u.UserName.ToLower() == usuarioLoginDto.NombreUsuario.ToLower());
 
-            bool isValid = await _userManager.CheckPasswordAsync(usuario, usuarioLoginDto.Password);
-
-
-
-            // Validamos si el usuario no existe con la combinacion de usuario y contraseña
-
-            if (usuario == null || isValid == false)
+            if (usuario == null)
             {
                 return new UsuarioLoginRespuestaDto()
                 {
-                    Token = "",
+                    Token = string.Empty,
                     Usuario = null
                 };
             }
 
-            //Aqui existe el usuario entonces podemos procesar el login
+            bool isValid = await _userManager.CheckPasswordAsync(usuario, usuarioLoginDto.Password);
+
+            if (!isValid)
+            {
+                return new UsuarioLoginRespuestaDto()
+                {
+                    Token = string.Empty,
+                    Usuario = null
+                };
+            }
+
             var roles = await _userManager.GetRolesAsync(usuario);
             var manejadorToken = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(claveSecreta);
 
-            // En UsuarioRepositorio.cs, método Login
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
@@ -91,7 +90,7 @@ namespace ApiPeliculas.Repositorio
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
-        var token = manejadorToken.CreateToken(tokenDescriptor);
+            var token = manejadorToken.CreateToken(tokenDescriptor);
 
             UsuarioLoginRespuestaDto usuarioLoginRespuestaDto = new UsuarioLoginRespuestaDto()
             {
@@ -104,8 +103,6 @@ namespace ApiPeliculas.Repositorio
 
         public async Task<UsuarioDatosDto> Registro(UsuarioRegistroDto usuarioRegistroDto)
         {
-            //var passwordEncriptada = obtenermd5(usuarioRegistroDto.Password);
-
             AppUsuario usuario = new AppUsuario()
             {
                 UserName = usuarioRegistroDto.NombreUsuario,
@@ -123,12 +120,25 @@ namespace ApiPeliculas.Repositorio
                     await _roleManager.CreateAsync(new IdentityRole("Registrado"));
                 }
 
-                await _userManager.AddToRoleAsync(usuario, "Admin");
+                await _userManager.AddToRoleAsync(usuario, "Registrado");
                 var usuarioRetornado = _bd.AppUsuario.FirstOrDefault(u => u.UserName == usuarioRegistroDto.NombreUsuario);
                 return _mapper.Map<UsuarioDatosDto>(usuarioRetornado);
             }
 
-            return new UsuarioDatosDto();
+            // Manejo de errores comunes de Identity (email/usuario duplicado, etc.)
+            var duplicateEmail = result.Errors.FirstOrDefault(e => e.Code.Equals("DuplicateEmail", StringComparison.OrdinalIgnoreCase));
+            if (duplicateEmail != null)
+            {
+                throw new InvalidOperationException("El email ya está en uso por otro usuario.");
+            }
+            var duplicateUser = result.Errors.FirstOrDefault(e => e.Code.Equals("DuplicateUserName", StringComparison.OrdinalIgnoreCase));
+            if (duplicateUser != null)
+            {
+                throw new InvalidOperationException("El nombre de usuario ya está en uso.");
+            }
+
+            // Mensaje genérico si no se reconoce la causa
+            throw new InvalidOperationException("No se pudo registrar el usuario.");
         }
     }
 }
