@@ -26,6 +26,7 @@ La API permite realizar operaciones CRUD (Crear, Leer, Actualizar, Eliminar) sob
 - **Operaciones CRUD** sobre la entidad "Película".
 - **Autorización** para acceder a operaciones de modificación de películas.
 - **Swagger UI** para facilitar las pruebas de la API.
+- Manejo de versiones.
 
 ## Tecnologías Utilizadas
 
